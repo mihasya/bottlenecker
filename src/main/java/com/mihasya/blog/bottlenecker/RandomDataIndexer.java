@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * index some random data into the configured Astyanax Pool
@@ -27,6 +28,8 @@ public class RandomDataIndexer implements Runnable {
     private final int threads;
     private final int writesPerThread;
     private final int timeoutSec;
+
+    private final AtomicLong totalWrites = new AtomicLong(0);
 
     public RandomDataIndexer(Configuration config) {
         this.keyspaceContext = Util.getKeyspace(config);
@@ -60,6 +63,9 @@ public class RandomDataIndexer implements Runnable {
                             try {
                                 Future<OperationResult<Void>> resultFuture = m.executeAsync();
                                 resultFuture.get(timeoutSec, TimeUnit.SECONDS);
+                                if (i % 1000 == 0) {
+                                    totalWrites.addAndGet(1000L);
+                                }
                                 break;
                             } catch (Exception e) {
                                 log.error("Error indexing: ", e);
@@ -72,6 +78,21 @@ public class RandomDataIndexer implements Runnable {
             t.setDaemon(false);
             t.start();
         }
+
+        Thread reporter = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(5));
+                    log.info("Written so far: {}", totalWrites.get());
+                    } catch (Throwable e) {
+                        log.error("Error in reporter thread: ", e);
+                    }
+                }
+            }
+        });
+        reporter.start();
     }
 
     public static void main(String[] args) {

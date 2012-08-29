@@ -19,8 +19,8 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * index some random data into the configured Astyanax Pool
  */
-public class RandomDataIndexer implements Runnable {
-    private static final Logger log = LoggerFactory.getLogger(RandomDataIndexer.class);
+public class RandomDataWriter implements Runnable {
+    private static final Logger log = LoggerFactory.getLogger(RandomDataWriter.class);
 
     private final AstyanaxContext<Keyspace> keyspaceContext;
     private final String cfName;
@@ -31,7 +31,7 @@ public class RandomDataIndexer implements Runnable {
 
     private final AtomicLong totalWrites = new AtomicLong(0);
 
-    public RandomDataIndexer(Configuration config) {
+    public RandomDataWriter(Configuration config) {
         this.keyspaceContext = Util.getKeyspace(config);
         this.cfName = config.getString("bottlenecker.cf_name", "random_data");
         this.prefix = config.getString("bottlenecker.key_prefix", "");
@@ -97,6 +97,6 @@ public class RandomDataIndexer implements Runnable {
 
     public static void main(String[] args) {
         // TODO do I need a proper config here?..
-        new RandomDataIndexer(new SystemConfiguration()).run();
+        new RandomDataWriter(new SystemConfiguration()).run();
     }
 }
